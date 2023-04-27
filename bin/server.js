@@ -17,7 +17,7 @@ const allowList = ['https://teddavis.org', 'http://localhost:8080', 'https://coc
 const fs = require('fs')
 
 const server = http.createServer((request, response) => {
-  switch(request.url){
+  switch (request.url) {
     // for /stats
 
     default:
@@ -25,8 +25,6 @@ const server = http.createServer((request, response) => {
       response.end('okay')
   }
 })
-
-
 
 wss.on('connection', setupWSConnection)
 
@@ -39,7 +37,7 @@ server.on('upgrade', (request, socket, head) => {
   // wss.emit('connection', ws, request)
 
   // limit original
-  if(earlyAccessMode && !allowList.includes(request.headers.origin)){
+  if (earlyAccessMode && !allowList.includes(request.headers.origin)) {
     console.log('blocked: ' + request.headers.origin)
     return
   }
@@ -47,48 +45,52 @@ server.on('upgrade', (request, socket, head) => {
    * @param {any} ws
    */
   const handleAuth = ws => {
-    const baseURL =  'https://' + request.headers.host + '/';
-    const url = new URL(request.url, baseURL);
-    const query = new URLSearchParams(url.search);
+    const baseURL = 'https://' + request.headers.host + '/'
+    const url = new URL(request.url, baseURL)
+    const query = new URLSearchParams(url.search)
 
     // console.log(request.connection.localAddress)
 
     // set auth if first time access
-    if(query.has('authID') && query.has('authSet') && query.has('authToken')){
+    if (query.has('authID') && query.has('authSet') && query.has('authToken')) {
       let authID = query.get('authID')
       let authSet = query.get('authSet')
       let authToken = query.get('authToken')
 
       // early access limit
-      const allowTokens = fs.readFileSync('cc-auth-list.txt', 'utf8').split('\n')
       let earlyAccess = false
-      for(let a of allowTokens){
-        if(a.includes(authToken)){
-          earlyAccess = true
+      try {
+        const allowTokens = fs.readFileSync('cc-auth-list.txt', 'utf8').split('\n')
+        for (let a of allowTokens) {
+          if (a.includes(authToken)) {
+            earlyAccess = true
+          }
         }
+      } catch (e) {
+        console.error('Missing configuration file \'cc-auth-list.txt\': ' + e)
       }
 
       // if(!allowToken.includes(authToken)){
-      if(earlyAccessMode && !earlyAccess){
+      if (earlyAccessMode && !earlyAccess) {
         return
       }
 
       let authHash = authSet // ccAuth.hash(authID.toString(), authSet) // authSet//
-      if(!classrooms.has(authID)){
+      if (!classrooms.has(authID)) {
         classrooms.set(authID, authHash)
         // console.log(['setup', authID, authSet, classrooms.get(authID), authHash])
         wss.emit('connection', ws, request)
       }
-    }else if(query.has('authID') && query.has('auth')){
+    } else if (query.has('authID') && query.has('auth')) {
       let authID = query.get('authID')
       let auth = query.get('auth')
       let authHash = auth // ccAuth.hash(authID.toString(), auth)  //
       // console.log(['auth', authID, auth, classrooms.get(authID), authHash])
-      if(classrooms.has(authID) && !utils.docs.has(authID)){
+      if (classrooms.has(authID) && !utils.docs.has(authID)) {
         classrooms.delete(authID)
         return
       }
-      if(classrooms.has(authID) && classrooms.get(authID) == authHash){
+      if (classrooms.has(authID) && classrooms.get(authID) === authHash) {
         wss.emit('connection', ws, request)
       }
     }
