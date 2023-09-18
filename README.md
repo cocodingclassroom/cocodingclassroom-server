@@ -9,5 +9,5 @@ This is the Y-Websocket based server for [COCODING Classroom](https://github.com
 Call
 
 ```shell
-npn run start
+npm run start
 ```
