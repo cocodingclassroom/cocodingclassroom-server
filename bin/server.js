@@ -15,6 +15,7 @@ const port = process.env.PORT || 1234;
 const allowList = [
   "https://teddavis.org",
   "http://localhost:8080",
+  "http://localhost:3000",
   "https://cocodingclassroom.cc",
 ];
 
@@ -33,6 +34,13 @@ wss.on("connection", setupWSConnection);
 const classrooms = new Map();
 
 server.on("upgrade", (request, socket, head) => {
+
+   // limit origin
+  if(!allowList.includes(request.headers.origin)){
+    console.log('blocked: ' + request.headers.origin) // *** check for flood..
+    return
+  }
+
   /**
    * @param {any} ws
    */
